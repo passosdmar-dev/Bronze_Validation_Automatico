@@ -22,26 +22,40 @@ def build_email_body(results, run_time):
     if not erros_por_pasta:
         return None, None
 
-    total_erros = sum(len(r["erros"]) for r in results)
+    total_erros  = sum(len(r["erros"])  for r in results)
+    total_avisos = sum(len(r["avisos"]) for r in results)
 
     linhas_html = ""
     linhas_txt  = ""
 
     for pasta, msgs in erros_por_pasta.items():
         nome = pasta.split("/")[-1].upper()
-        linhas_html += f"""
+        r_atual = next(r for r in results if r["pasta"] == pasta)
+
+        for msg in r_atual["erros"]:
+            linhas_html += f"""
         <tr>
           <td style="padding:10px 14px;font-weight:700;color:#ff4d6a;
-                     font-family:monospace;background:#1a0a0e;border-radius:6px">
-            {nome}
-          </td>
-          <td style="padding:10px 14px">
-            {'<br>'.join(f"• {m}" for m in msgs)}
-          </td>
+                     font-family:monospace;background:#1a0a0e;border-radius:6px">{nome}</td>
+          <td style="padding:10px 14px;color:#e8eaf0">❌ {msg}</td>
         </tr>"""
+
+        for msg in r_atual["avisos"]:
+            linhas_html += f"""
+        <tr>
+          <td style="padding:10px 14px;font-weight:700;color:#ffc43d;
+                     font-family:monospace;background:#1a0e00;border-radius:6px">{nome}</td>
+          <td style="padding:10px 14px;color:#e8eaf0">⚠️ {msg}</td>
+        </tr>"""
+
         linhas_txt += f"\n[{nome}]\n" + "\n".join(f"  • {m}" for m in msgs) + "\n"
 
-    subject = f"⚠️ Bronze Validation — {total_erros} erro(s) encontrado(s) [{run_time}]"
+    if total_erros > 0 and total_avisos > 0:
+        subject = f"❌ Bronze Validation — {total_erros} erro(s) e {total_avisos} aviso(s) [{run_time}]"
+    elif total_erros > 0:
+        subject = f"❌ Bronze Validation — {total_erros} erro(s) encontrado(s) [{run_time}]"
+    else:
+        subject = f"⚠️ Bronze Validation — {total_avisos} aviso(s) encontrado(s) [{run_time}]"
 
     html_body = f"""
     <html><body style="margin:0;padding:0;background:#0a0c10;font-family:'Segoe UI',sans-serif;color:#e8eaf0">
@@ -62,6 +76,7 @@ def build_email_body(results, run_time):
         <div style="padding:24px 32px">
           <p style="font-size:15px;color:#9aa0b0;margin-bottom:20px">
             Foram encontrados <strong style="color:#ff4d6a">{total_erros} erro(s)</strong>
+            e <strong style="color:#ffc43d">{total_avisos} aviso(s)</strong>
             na última execução de validação da Camada Bronze.
           </p>
 
@@ -103,9 +118,10 @@ def build_email_body(results, run_time):
 def send_alert_if_needed(results, run_time):
     """Verifica se há erros e envia e-mail se necessário."""
 
-    tem_erros = any(r["erros"] for r in results)
-    if not tem_erros:
-        print("✅ Nenhum erro crítico — alerta de e-mail não enviado.")
+    tem_erros  = any(r["erros"]  for r in results)
+    tem_avisos = any(r["avisos"] for r in results)
+    if not tem_erros and not tem_avisos:
+        print("✅ Nenhum erro ou aviso — alerta de e-mail não enviado.")
         return
 
     # Variáveis de ambiente (configuradas nos Secrets do GitHub)
