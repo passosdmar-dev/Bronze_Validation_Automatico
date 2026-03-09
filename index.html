@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="refresh" content="300">
+<title>Bronze Layer Validation — Revisus</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0c10;--surface:#111318;--surface2:#181c24;--border:#1e2330;
+  --green:#00e5a0;--green-dim:rgba(0,229,160,.12);--red:#ff4d6a;
+  --red-dim:rgba(255,77,106,.12);--yellow:#ffc43d;--yellow-dim:rgba(255,196,61,.12);
+  --blue:#4da6ff;--blue-dim:rgba(77,166,255,.1);--text:#e8eaf0;--muted:#5a6070;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,160,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.container{max-width:1200px;margin:0 auto;padding:40px 24px 80px;position:relative;z-index:1}
+header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:32px;flex-wrap:wrap}
+.header-left h1{font-size:clamp(26px,4vw,38px);font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,#fff 40%,var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.header-left p{margin-top:6px;color:var(--muted);font-family:'Space Mono',monospace;font-size:11px;letter-spacing:1px}
+.header-badge{display:flex;align-items:center;gap:8px;background:var(--green-dim);border:1px solid rgba(0,229,160,.25);border-radius:999px;padding:8px 18px;font-size:13px;font-weight:600;color:var(--green)}
+.pulse{width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 0 0 rgba(0,229,160,.4)}50%{opacity:.7;transform:scale(1.1);box-shadow:0 0 0 6px rgba(0,229,160,0)}}
+.timestamp-bar{display:flex;align-items:center;gap:16px;font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.timestamp-bar span{color:var(--green)}
+.global-status{text-align:center;padding:18px;background:var(--surface);border:1px solid #ff4d6a33;border-radius:14px;font-size:18px;font-weight:800;color:#ff4d6a;letter-spacing:.5px;margin-bottom:32px}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:36px}
+.summary-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 18px;position:relative;overflow:hidden;transition:transform .2s}
+.summary-card:hover{transform:translateY(-3px)}
+.summary-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0}
+.summary-card.green::after{background:var(--green)}.summary-card.red::after{background:var(--red)}.summary-card.yellow::after{background:var(--yellow)}.summary-card.blue::after{background:var(--blue)}
+.summary-card .label{font-size:10px;font-family:'Space Mono',monospace;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+.summary-card .value{font-size:34px;font-weight:800;letter-spacing:-1px}
+.summary-card.green .value{color:var(--green)}.summary-card.red .value{color:var(--red)}.summary-card.yellow .value{color:var(--yellow)}.summary-card.blue .value{color:var(--blue)}
+.summary-card .sub{font-size:11px;color:var(--muted);margin-top:5px}
+.section-title{font-size:12px;font-family:'Space Mono',monospace;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:18px;padding-left:12px;border-left:3px solid var(--green)}
+.entities-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(520px,1fr));gap:18px;margin-bottom:36px}
+@media(max-width:600px){.entities-grid{grid-template-columns:1fr}}
+.entity-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.entity-header{padding:16px 22px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.entity-name{font-size:14px;font-weight:700;display:flex;align-items:center;gap:10px}
+.entity-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.entity-path{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-top:2px;word-break:break-all}
+.status-pill{padding:4px 10px;border-radius:999px;font-size:10px;font-weight:700;font-family:'Space Mono',monospace}
+.status-pill.ok{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,229,160,.25)}
+.status-pill.warn{background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(255,196,61,.25)}
+.status-pill.error{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,106,.25)}
+.entity-body{padding:18px 22px}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
+.stat-box .sval{font-size:18px;font-weight:800;letter-spacing:-.5px}
+.stat-box .slabel{font-size:9px;font-family:'Space Mono',monospace;color:var(--muted);margin-top:2px;text-transform:uppercase}
+.file-path-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:'Space Mono',monospace;font-size:9px;color:var(--blue);word-break:break-all;margin-bottom:12px;line-height:1.5}
+.file-path-label{color:var(--muted);font-size:8px;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:3px}
+.validation-list{display:flex;flex-direction:column;gap:8px}
+.validation-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border)}
+.validation-row .check-label{font-size:12px;color:#9aa0b0;display:flex;align-items:center;gap:7px;flex:1}
+.icon-ok{color:var(--green);font-size:14px}.icon-err{color:var(--red);font-size:14px}.icon-warn{color:var(--yellow);font-size:14px}
+.val-result{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;white-space:nowrap}
+.val-result.ok{background:var(--green-dim);color:var(--green)}.val-result.err{background:var(--red-dim);color:var(--red)}.val-result.warn{background:var(--yellow-dim);color:var(--yellow)}
+footer{text-align:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);padding-top:20px;border-top:1px solid var(--border)}
+footer span{color:var(--green)}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="header-left">
+      <h1>Bronze Layer<br>Validation Report</h1>
+      <p>PROJETO REVISUS · DATA LAKE CREARE · CAMADA BRONZE</p>
+    </div>
+    <div class="header-badge"><div class="pulse"></div>AUTO-ATUALIZADO</div>
+  </header>
+
+  <div class="timestamp-bar">
+    <div>🕐 Última execução: <span>2026-03-09 02:51:05 UTC</span></div>
+    <div>📦 Container: <span>mvp-connect-express</span></div>
+    <div>☁️ Account: <span>datalakecreare</span></div>
+    <div>🔄 Atualização automática: <span>a cada 5 min</span></div>
+  </div>
+
+  <div class="global-status">⚠️ 1 ERRO(S) ENCONTRADO(S)</div>
+
+  <div class="summary-grid">
+    <div class="summary-card green">
+      <div class="label">Arquivos Válidos</div>
+      <div class="value">859</div>
+      <div class="sub">de 1117 verificados</div>
+    </div>
+    <div class="summary-card red">
+      <div class="label">Arquivos Vazios</div>
+      <div class="value">258</div>
+      <div class="sub">normal em near-RT</div>
+    </div>
+    <div class="summary-card green">
+      <div class="label">Schema OK</div>
+      <div class="value">4/4</div>
+      <div class="sub">entidades validadas</div>
+    </div>
+    <div class="summary-card red">
+      <div class="label">Duplicados</div>
+      <div class="value">2</div>
+      <div class="sub">total encontrado</div>
+    </div>
+    <div class="summary-card red">
+      <div class="label">Total Erros</div>
+      <div class="value">1</div>
+      <div class="sub">0 aviso(s)</div>
+    </div>
+  </div>
+
+  <div class="section-title">Validação por Entidade</div>
+  <div class="entities-grid">
+    
+    <div class="entity-card">
+      <div class="entity-header">
+        <div>
+          <div class="entity-name">
+            <div class="entity-icon" style="background:rgba(255,255,255,0.06);color:#00e5a0">📡</div>
+            creare/events
+          </div>
+          <div class="entity-path">creare/events/dt=2026-03-09/hour=02/events_f684385b-c73f-4456-8a2c-29a87c964ef2.parquet</div>
+        </div>
+        <span class="status-pill ok">OK</span>
+      </div>
+      <div class="entity-body">
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="sval">98</div><div class="slabel">Linhas</div>
+          </div>
+          <div class="stat-box">
+            <div class="sval">7</div><div class="slabel">Colunas</div>
+          </div>
+          <div class="stat-box">
+            <div class="sval" style="color:var(--green)">280</div>
+            <div class="slabel">Total Arqs</div>
+          </div>
+        </div>
+        <div class="file-path-box">
+          <span class="file-path-label">último arquivo · 2026-03-09 02:45:02</span>
+          creare/events/dt=2026-03-09/hour=02/events_f684385b-c73f-4456-8a2c-29a87c964ef2.parquet
+        </div>
+        <div class="validation-list">
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> Arquivo chegou no Data Lake</span>
+          <span class="val-result ok">OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> Schema válido (7 colunas)</span>
+          <span class="val-result ok">SCHEMA OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> 'event_id' — sem valores nulos</span>
+          <span class="val-result ok">OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> 'vehicle_id' — sem valores nulos</span>
+          <span class="val-result ok">OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> 'timestamp' — sem valores nulos</span>
+          <span class="val-result ok">OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> Nenhum duplicado em 'event_id'</span>
+          <span class="val-result ok">0 DUPL</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> Volume: 98 regs (esperado 30–2000)</span>
+          <span class="val-result ok">OK</span>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="entity-card">
+      <div class="entity-header">
+        <div>
+          <div class="entity-name">
+            <div class="entity-icon" style="background:rgba(255,255,255,0.06);color:#4da6ff">📍</div>
+            creare/tracking
+          </div>
+          <div class="entity-path">creare/tracking/dt=2026-03-09/hour=02/tracking_c95d00b5-0b7e-42cd-b447-521da5be965c.parquet</div>
+        </div>
+        <span class="status-pill ok">OK</span>
+      </div>
+      <div class="entity-body">
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="sval">1000</div><div class="slabel">Linhas</div>
+          </div>
+          <div class="stat-box">
+            <div class="sval">9</div><div class="slabel">Colunas</div>
+          </div>
+          <div class="stat-box">
+            <div class="sval" style="color:var(--green)">281</div>
+            <div class="slabel">Total Arqs</div>
+          </div>
+        </div>
+        <div class="file-path-box">
+          <span class="file-path-label">último arquivo · 2026-03-09 02:45:01</span>
+          creare/tracking/dt=2026-03-09/hour=02/tracking_c95d00b5-0b7e-42cd-b447-521da5be965c.parquet
+        </div>
+        <div class="validation-list">
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> Arquivo chegou no Data Lake</span>
+          <span class="val-result ok">OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> Schema válido (9 colunas)</span>
+          <span class="val-result ok">SCHEMA OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> 'latitude' — sem valores nulos</span>
+          <span class="val-result ok">OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> 'longitude' — sem valores nulos</span>
+          <span class="val-result ok">OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> Nenhum duplicado em 'tracking_id'</span>
+          <span class="val-result ok">0 DUPL</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> Volume: 1000 regs (esperado 500–5000)</span>
+          <span class="val-result ok">OK</span>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="entity-card">
+      <div class="entity-header">
+        <div>
+          <div class="entity-name">
+            <div class="entity-icon" style="background:rgba(255,255,255,0.06);color:#ffc43d">🧑‍✈️</div>
+            creare/drivers
+          </div>
+          <div class="entity-path">creare/drivers/dt=2026-03-09/hour=02/drivers_0b0d96e0-5cec-47da-a726-a51ec1c9e438.parquet</div>
+        </div>
+        <span class="status-pill error">ERRO</span>
+      </div>
+      <div class="entity-body">
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="sval">1340</div><div class="slabel">Linhas</div>
+          </div>
+          <div class="stat-box">
+            <div class="sval">14</div><div class="slabel">Colunas</div>
+          </div>
+          <div class="stat-box">
+            <div class="sval" style="color:var(--green)">278</div>
+            <div class="slabel">Total Arqs</div>
+          </div>
+        </div>
+        <div class="file-path-box">
+          <span class="file-path-label">último arquivo · 2026-03-09 02:45:02</span>
+          creare/drivers/dt=2026-03-09/hour=02/drivers_0b0d96e0-5cec-47da-a726-a51ec1c9e438.parquet
+        </div>
+        <div class="validation-list">
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> Arquivo chegou no Data Lake</span>
+          <span class="val-result ok">OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> Schema válido (14 colunas)</span>
+          <span class="val-result ok">SCHEMA OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> 'driver_id' — sem valores nulos</span>
+          <span class="val-result ok">OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> 'driver_name' — sem valores nulos</span>
+          <span class="val-result ok">OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-err">✗</span> 2 duplicado(s) em 'driver_id'</span>
+          <span class="val-result err">2 DUPL</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> Volume: 1340 regs (esperado 100–5000)</span>
+          <span class="val-result ok">OK</span>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="entity-card">
+      <div class="entity-header">
+        <div>
+          <div class="entity-name">
+            <div class="entity-icon" style="background:rgba(255,255,255,0.06);color:#ff4d6a">📌</div>
+            creare/pontos_notaveis
+          </div>
+          <div class="entity-path">creare/pontos_notaveis/dt=2026-03-09/hour=02/pontos_notaveis_37bf65db-43a3-4280-9290-32f04c6eea70.parquet</div>
+        </div>
+        <span class="status-pill ok">OK</span>
+      </div>
+      <div class="entity-body">
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="sval">74</div><div class="slabel">Linhas</div>
+          </div>
+          <div class="stat-box">
+            <div class="sval">20</div><div class="slabel">Colunas</div>
+          </div>
+          <div class="stat-box">
+            <div class="sval" style="color:var(--green)">278</div>
+            <div class="slabel">Total Arqs</div>
+          </div>
+        </div>
+        <div class="file-path-box">
+          <span class="file-path-label">último arquivo · 2026-03-09 02:45:02</span>
+          creare/pontos_notaveis/dt=2026-03-09/hour=02/pontos_notaveis_37bf65db-43a3-4280-9290-32f04c6eea70.parquet
+        </div>
+        <div class="validation-list">
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> Arquivo chegou no Data Lake</span>
+          <span class="val-result ok">OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> Schema válido (20 colunas)</span>
+          <span class="val-result ok">SCHEMA OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> 'ponto_notavel_id' — sem valores nulos</span>
+          <span class="val-result ok">OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> 'fence_id' — sem valores nulos</span>
+          <span class="val-result ok">OK</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> Nenhum duplicado em 'ponto_notavel_id'</span>
+          <span class="val-result ok">0 DUPL</span>
+        </div>
+        <div class="validation-row">
+          <span class="check-label"><span class="icon-ok">✓</span> Volume: 74 regs (esperado 10–1000)</span>
+          <span class="val-result ok">OK</span>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Projeto Revisus · Bronze Validation · Auto-gerado em <span>2026-03-09 02:51:05 UTC</span> · GitHub Actions
+  </footer>
+</div>
+</body>
+</html>
