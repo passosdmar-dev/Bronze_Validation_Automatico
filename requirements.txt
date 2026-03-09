@@ -1,0 +1,4 @@
+azure-storage-file-datalake
+pandas
+pyarrow
+python-dotenv
