@@ -256,5 +256,48 @@
         "tem_erro": false
       }
     }
+  },
+  {
+    "run_time": "2026-03-11 14:37:21 UTC",
+    "total_erros": 1,
+    "total_avisos": 0,
+    "entities": {
+      "events": {
+        "linhas": 142,
+        "duplicados": 0,
+        "arquivos_vazios": 124,
+        "total_arquivos": 553,
+        "schema_ok": true,
+        "volume_ok": true,
+        "tem_erro": false
+      },
+      "tracking": {
+        "linhas": 725,
+        "duplicados": 0,
+        "arquivos_vazios": 125,
+        "total_arquivos": 563,
+        "schema_ok": true,
+        "volume_ok": true,
+        "tem_erro": false
+      },
+      "drivers": {
+        "linhas": 1376,
+        "duplicados": 2,
+        "arquivos_vazios": 122,
+        "total_arquivos": 547,
+        "schema_ok": true,
+        "volume_ok": true,
+        "tem_erro": true
+      },
+      "pontos_notaveis": {
+        "linhas": 96,
+        "duplicados": 0,
+        "arquivos_vazios": 122,
+        "total_arquivos": 547,
+        "schema_ok": true,
+        "volume_ok": true,
+        "tem_erro": false
+      }
+    }
   }
 ]
