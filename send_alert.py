@@ -97,7 +97,7 @@ def build_email_body(results, run_time):
 
         <!-- CTA -->
         <div style="padding:0 32px 28px">
-          <a href="https://passosdmar-dev.github.io/Etapa_de_Testes_Revisus_Camada_Bronze"
+          <a href="https://passosdmar-dev.github.io/Bronze_Validation_Automatico"
              style="display:inline-block;background:#00e5a0;color:#0a0c10;
                     padding:12px 24px;border-radius:8px;font-weight:700;
                     text-decoration:none;font-size:14px">
