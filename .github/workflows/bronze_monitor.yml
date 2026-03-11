@@ -8,7 +8,7 @@ on:
     # - cron: "*/15 * * * *"  # → a cada 15 minutos
     #   "0 * * * *"     → a cada hora
     #   "0 8 * * *"     → todo dia às 08:00 UTC (05:00 Brasília)
-    # - cron: "0 * * * *"
+    - cron: "0 * * * *"
 
   # Permite rodar manualmente pelo GitHub (botão "Run workflow")
   workflow_dispatch:
